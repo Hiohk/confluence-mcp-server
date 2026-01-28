@@ -1,0 +1,28 @@
+server:
+  port: 9091
+
+spring:
+  application:
+    name: confluence_mcp_server
+
+  ai:
+    mcp:
+      server:
+        enabled: true
+        name: confluence_mcp_server
+        version: 1.0.0
+        sse-endpoint: /mcp/sse
+        sse-message-endpoint: /api/v1/mcp
+        capabilities:
+          tool: true
+
+logging:
+  level:
+    # 查看MCP详细日志
+    io.modelcontextprotocol: TRACE
+    org.springframework.ai.mcp: TRACE
+
+confluence:
+  url: https://wiki.in.eciticcfc.com  # Confluence服务器地址
+  username: api-fetch             # Confluence用户名
+  password: PvB2K^#sBm5bF$B3         # Confluence密码
