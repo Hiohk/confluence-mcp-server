@@ -90,7 +90,6 @@ public class ConfluenceTool {
         try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
             String url = confluenceUrl + "/pages/viewpage.action?pageId=" + pageId;
             log.info("Request URL: {}", url);
-//            https://wiki.in.eciticcfc.com/pages/viewpage.action?pageId=126338655
 
             String authHeader = "Basic " + Base64.getEncoder()
                     .encodeToString((confluenceUsername + ":" + confluencePassword).getBytes());

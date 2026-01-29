@@ -10,7 +10,7 @@
     </parent>
     <groupId>com.confluence.mcp</groupId>
     <artifactId>confluence-mcp-server</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>0.0.1</version>
     <name>confluence-mcp-server</name>
     <description>confluence-mcp-server</description>
     <url/>
