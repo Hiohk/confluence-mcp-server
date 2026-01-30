@@ -1,0 +1,16 @@
+# 测试环境配置
+confluence:
+  url: http://test-confluence.example.com
+  username: test-user
+  password: test-password
+  default-space: TEST
+  default-content-type: page
+  default-search-limit: 5
+  connection-timeout: 5000
+  read-timeout: 5000
+
+logging:
+  level:
+    com.confluence.mcp: DEBUG
+    io.modelcontextprotocol: OFF
+    org.springframework.ai.mcp: OFF

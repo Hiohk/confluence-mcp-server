@@ -1,122 +1,81 @@
 package com.confluence.mcp.tool;
 
+import com.confluence.mcp.config.ConfluenceConfig;
+import com.confluence.mcp.exception.ConfluenceException;
+import com.confluence.mcp.util.HttpClientUtil;
+import com.confluence.mcp.util.JsonParserUtil;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
-import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
-import org.apache.hc.client5.http.impl.classic.HttpClients;
-import org.apache.hc.core5.http.HttpEntity;
-import org.apache.hc.core5.http.io.entity.EntityUtils;
-import org.apache.hc.core5.http.io.support.ClassicRequestBuilder;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.springframework.ai.tool.annotation.Tool;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.util.Base64;
 
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class ConfluenceTool {
 
-    @Value("${confluence.url}")
-    private String confluenceUrl;
+    private final ConfluenceConfig config;
+    private final HttpClientUtil httpClientUtil;
+    private final JsonParserUtil jsonParserUtil;
 
-    @Value("${confluence.username}")
-    private String confluenceUsername;
-
-    @Value("${confluence.password}")
-    private String confluencePassword;
-
-    @Tool(description = "在Confluence中搜索内容，支持按关键字、空间和类型进行搜索，并返回详细的页面内容")
+    @Tool(description = "在Confluence中搜索内容，支持按关键字、空间和类型进行搜索，并返回详细的页面内容。当space未指定时，默认使用ZXJXTECH空间")
     public String searchConfluence(String searchKeyword, String space, String contentType, Integer limit) {
-        log.info("Confluence搜索请求: 关键字={}, 空间={}, 内容类型={}, 限制数={}", searchKeyword, space, contentType, limit);
-        try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
-            // 设置默认值
-            if (space == null || space.isEmpty()) {
-                space = "RP";
-            }
-            if (contentType == null || contentType.isEmpty()) {
-                contentType = "page,blogpost";
-            }
-            if (limit == null) {
-                limit = 10;
-            }
+        log.info("Confluence搜索请求开始: 关键字={}, 空间={}(默认:ZXJXTECH), 内容类型={}, 限制数={}",
+            searchKeyword, space, contentType, limit);
+
+        try {
+            // 使用配置类中的默认值
+            String targetSpace = (space == null || space.isEmpty()) ? config.getDefaultSpace() : space;
+            String targetContentType = (contentType == null || contentType.isEmpty()) ? config.getDefaultContentType() : contentType;
+            int targetLimit = (limit == null) ? config.getDefaultSearchLimit() : limit;
 
             // 构建CQL查询
-            String cql = String.format("siteSearch ~ \"%s\" AND space in (\"%s\") AND type in (\"%s\")",
-                    searchKeyword, space, contentType.replace(",", "\",\""));
-
-            // 构建查询参数
-            String queryParams = String.format(
-                    "cql=%s&start=0&limit=%d&excerpt=none&expand=space.icon&includeArchivedSpaces=false&src=next.ui.search",
-                    URLEncoder.encode(cql, StandardCharsets.UTF_8),
-                    limit
-            );
+            String cql = buildCqlQuery(searchKeyword, targetSpace, targetContentType);
 
             // 构建请求URL
-            String url = confluenceUrl + "/rest/api/search?" + queryParams;
+            String url = buildSearchUrl(cql, targetLimit);
 
-            // 创建HTTP请求
-            ClassicRequestBuilder requestBuilder = ClassicRequestBuilder.get(url)
-                    .addHeader("Content-Type", "application/json")
-                    .addHeader("Authorization", "Basic " + Base64.getEncoder()
-                            .encodeToString((confluenceUsername + ":" + confluencePassword).getBytes()));
+            // 执行HTTP请求
+            String responseString = httpClientUtil.executeGetRequest(url);
 
-            // 发送请求并处理响应
-            try (CloseableHttpResponse response = httpClient.execute(requestBuilder.build())) {
-                HttpEntity entity = response.getEntity();
-                String responseString = EntityUtils.toString(entity);
-                log.info("Confluence搜索响应: {}", responseString);
-
-                // 解析响应并获取页面详细内容
-                return parseSearchResultsWithContent(responseString);
-            }
+            // 解析响应并获取页面详细内容
+            return parseSearchResultsWithContent(responseString);
         } catch (Exception e) {
-            log.error("Confluence搜索失败", e);
-            return "搜索失败: " + e.getMessage();
+            String errorMessage = "Confluence搜索失败: " + e.getMessage();
+            log.error(errorMessage, e);
+            log.debug("搜索失败详情 - 关键字: {}, 空间: {}, 类型: {}, 限制: {}", searchKeyword, space, contentType, limit);
+            throw new ConfluenceException(errorMessage, e);
         }
     }
 
     @Tool(description = "获取Confluence页面内容")
     public String getConfluencePage(String pageId) {
         log.info("获取Confluence页面请求: 页面ID={}", pageId);
-        log.info("Confluence URL: {}", confluenceUrl);
-        log.info("Username: {}", confluenceUsername);
-        try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
-            String url = confluenceUrl + "/pages/viewpage.action?pageId=" + pageId;
-            log.info("Request URL: {}", url);
 
-            String authHeader = "Basic " + Base64.getEncoder()
-                    .encodeToString((confluenceUsername + ":" + confluencePassword).getBytes());
+        try {
+            // 构建页面URL
+            String url = buildPageUrl(pageId);
 
-            ClassicRequestBuilder requestBuilder = ClassicRequestBuilder.get(url)
-                    .addHeader("Content-Type", "application/json")
-                    .addHeader("Authorization", authHeader);
+            // 执行HTTP请求
+            String responseString = httpClientUtil.executeGetRequest(url);
 
-            try (CloseableHttpResponse response = httpClient.execute(requestBuilder.build())) {
-                int statusCode = response.getCode();
-                log.info("HTTP Status Code: {}", statusCode);
-
-                HttpEntity entity = response.getEntity();
-                String responseString = EntityUtils.toString(entity);
-                log.info("Confluence页面内容响应前200字符: {}",
-                         responseString.length() > 200 ? responseString.substring(0, 200) + "..." : responseString);
-
-                // 检查是否是HTML响应
-                if (responseString.contains("<html") || responseString.contains("<!DOCTYPE")) {
-                    return extractContentFromHtml(responseString);
-                } else {
-                    return extractPageContent(responseString);
-                }
+            // 检查响应类型并提取内容
+            if (responseString.contains("<html") || responseString.contains("<!DOCTYPE")) {
+                return extractContentFromHtml(responseString);
+            } else {
+                return extractPageContentFromJson(responseString);
             }
         } catch (Exception e) {
-            log.error("获取Confluence页面失败", e);
-            return "获取页面失败: " + e.getMessage();
+            String errorMessage = "获取Confluence页面失败: " + e.getMessage();
+            log.error(errorMessage, e);
+            throw new ConfluenceException(errorMessage, e);
         }
     }
 
@@ -156,7 +115,7 @@ public class ConfluenceTool {
 
                 result.append("=== ").append(title).append(" ===\n");
                 result.append("页面ID: ").append(pageId).append("\n");
-                result.append("访问链接: ").append(confluenceUrl).append(webuiUrl).append("\n");
+                result.append("访问链接: ").append(config.getUrl()).append(webuiUrl).append("\n");
 
                 if (pageContent != null && !pageContent.trim().isEmpty()) {
                     result.append("内容摘要:\n").append(pageContent).append("\n");
@@ -182,25 +141,14 @@ public class ConfluenceTool {
     }
 
     private String getPageContentForSearch(String pageId) {
-        try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
-            String url = confluenceUrl + "/pages/viewpage.action?pageId=" + pageId;
+        try {
+            String url = buildPageUrl(pageId);
+            String responseString = httpClientUtil.executeGetRequest(url);
 
-            String authHeader = "Basic " + Base64.getEncoder()
-                    .encodeToString((confluenceUsername + ":" + confluencePassword).getBytes());
-
-            ClassicRequestBuilder requestBuilder = ClassicRequestBuilder.get(url)
-                    .addHeader("Content-Type", "application/json")
-                    .addHeader("Authorization", authHeader);
-
-            try (CloseableHttpResponse response = httpClient.execute(requestBuilder.build())) {
-                HttpEntity entity = response.getEntity();
-                String responseString = EntityUtils.toString(entity);
-
-                if (responseString.contains("<html") || responseString.contains("<!DOCTYPE")) {
-                    return extractContentSummaryFromHtml(responseString);
-                } else {
-                    return extractContentSummaryFromJson(responseString);
-                }
+            if (responseString.contains("<html") || responseString.contains("<!DOCTYPE")) {
+                return extractContentSummaryFromHtml(responseString);
+            } else {
+                return extractContentSummaryFromJson(responseString);
             }
         } catch (Exception e) {
             log.warn("获取页面内容失败: {}", e.getMessage());
@@ -269,23 +217,43 @@ public class ConfluenceTool {
         }
     }
 
-    private String extractPageContent(String jsonResponse) {
-        try {
-            // 提取页面内容
-            if (jsonResponse.contains("\"body\"")) {
-                int bodyStart = jsonResponse.indexOf("\"body\"");
-                int viewStart = jsonResponse.indexOf("\"view\"", bodyStart);
-                int valueStart = jsonResponse.indexOf("\"value\"", viewStart);
-                int contentStart = jsonResponse.indexOf("\"", valueStart + 8) + 1;
-                int contentEnd = jsonResponse.indexOf("\"", contentStart);
+    /**
+     * 构建CQL查询字符串
+     */
+    private String buildCqlQuery(String searchKeyword, String space, String contentType) {
+        return String.format("siteSearch ~ \"%s\" AND space in (\"%s\") AND type in (\"%s\")",
+                searchKeyword, space, contentType.replace(",", "\",\""));
+    }
 
-                if (contentStart > 0 && contentEnd > contentStart) {
-                    return jsonResponse.substring(contentStart, contentEnd);
-                }
-            }
-            return "无法提取页面内容，响应格式: " + (jsonResponse.length() > 200 ? jsonResponse.substring(0, 200) + "..." : jsonResponse);
+    /**
+     * 构建搜索URL
+     */
+    private String buildSearchUrl(String cql, int limit) throws Exception {
+        String queryParams = String.format(
+                "cql=%s&start=0&limit=%d&excerpt=none&expand=space.icon&includeArchivedSpaces=false&src=next.ui.search",
+                URLEncoder.encode(cql, StandardCharsets.UTF_8),
+                limit
+        );
+        return config.getUrl() + "/rest/api/search?" + queryParams;
+    }
+
+    /**
+     * 构建页面URL
+     */
+    private String buildPageUrl(String pageId) {
+        return config.getUrl() + "/pages/viewpage.action?pageId=" + pageId;
+    }
+
+    /**
+     * 从JSON响应中提取页面内容
+     */
+    private String extractPageContentFromJson(String jsonResponse) {
+        try {
+            return jsonParserUtil.parsePageContent(jsonResponse)
+                    .orElse("无法提取页面内容，响应格式: " +
+                            (jsonResponse.length() > 200 ? jsonResponse.substring(0, 200) + "..." : jsonResponse));
         } catch (Exception e) {
-            return "页面内容提取失败: " + e.getMessage();
+            throw new ConfluenceException("页面内容提取失败: " + e.getMessage(), e);
         }
     }
 

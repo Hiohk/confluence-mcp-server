@@ -1,5 +1,5 @@
 server:
-  port: 9091
+  port: 9090
 
 spring:
   application:
@@ -23,6 +23,11 @@ logging:
     org.springframework.ai.mcp: TRACE
 
 confluence:
-  url: xxxxxx  # Confluence服务器地址
-  username: xxxxx # Confluence用户名
-  password: xxxxx # Confluence密码
+  url: ${CONFLUENCE_URL:xxxxxx}  # Confluence服务器地址
+  username: ${CONFLUENCE_USERNAME:xxxxxx} # Confluence用户名
+  password: ${CONFLUENCE_PASSWORD:xxxxxx} # Confluence密码
+  default-space: ${CONFLUENCE_DEFAULT_SPACE:ZXJXTECH} # 默认搜索空间
+  default-content-type: ${CONFLUENCE_DEFAULT_CONTENT_TYPE:page,blogpost} # 默认内容类型
+  default-search-limit: ${CONFLUENCE_DEFAULT_SEARCH_LIMIT:10} # 默认搜索限制数
+  connection-timeout: ${CONFLUENCE_CONNECTION_TIMEOUT:30000} # 连接超时时间(毫秒)
+  read-timeout: ${CONFLUENCE_READ_TIMEOUT:30000} # 读取超时时间(毫秒)
