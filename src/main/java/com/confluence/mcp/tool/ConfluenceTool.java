@@ -25,9 +25,10 @@ public class ConfluenceTool {
     private final HttpClientUtil httpClientUtil;
     private final JsonParserUtil jsonParserUtil;
 
-    @Tool(description = "在Confluence中搜索内容，支持按关键字、空间和类型进行搜索，并返回详细的页面内容")
+    @Tool(description = "在Confluence中搜索内容，支持按关键字、空间和类型进行搜索，并返回详细的页面内容。当space未指定时，默认使用ZXJXTECH空间")
     public String searchConfluence(String searchKeyword, String space, String contentType, Integer limit) {
-        log.info("Confluence搜索请求开始: 关键字={}, 空间={}, 内容类型={}, 限制数={}", searchKeyword, space, contentType, limit);
+        log.info("Confluence搜索请求开始: 关键字={}, 空间={}(默认:ZXJXTECH), 内容类型={}, 限制数={}",
+            searchKeyword, space, contentType, limit);
 
         try {
             // 使用配置类中的默认值
