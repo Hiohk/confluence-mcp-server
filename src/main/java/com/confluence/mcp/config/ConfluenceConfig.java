@@ -30,7 +30,7 @@ public class ConfluenceConfig {
     /**
      * 默认搜索空间
      */
-    private String defaultSpace = "RP";
+    private String defaultSpace = "ZXJXTECH";
 
     /**
      * 默认内容类型
