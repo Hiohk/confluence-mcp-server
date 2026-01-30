@@ -1,6 +1,6 @@
-# Confluence MCP Server ![Java](https://img.shields.io/badge/Java-17+-orange) ![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.2-green) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)]() ![CI/CD](https://github.com/your-org/confluence-mcp-server/actions/workflows/ci-cd.yml/badge.svg)
+# Confluence MCP Server ![Java](https://img.shields.io/badge/Java-17+-orange) ![Spring Boot](https://img.shields.io/badge/Spring_Boot-4.0-green) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)]()
 
-> 基于Spring Boot 3.2构建的企业级Confluence MCP服务器，提供标准的Model Context Protocol接口，支持Confluence内容搜索和页面访问。
+> 基于Spring Boot 4.0构建的企业级Confluence MCP服务器，提供标准的Model Context Protocol接口，支持Confluence内容搜索和页面访问。
 
 ## ✨ 核心特性
 
@@ -12,14 +12,14 @@
 
 ## 🛠️ 技术栈
 
-| 组件           | 技术选型                     |
-|---------------|----------------------------|
-| 开发语言       | Java 17+                   |
-| 核心框架       | Spring Boot 3.2            |
-| MCP协议支持    | Spring AI MCP              |
-| 构建工具       | Maven                      |
-| 测试框架       | JUnit 5, Mockito           |
-| HTTP客户端     | Apache HttpClient 5        |
+| 组件           | 技术选型                |
+|---------------|---------------------|
+| 开发语言       | Java 17+            |
+| 核心框架       | Spring Boot 4.x     |
+| MCP协议支持    | Spring AI MCP       |
+| 构建工具       | Maven               |
+| 测试框架       | JUnit 5, Mockito    |
+| HTTP客户端     | Apache HttpClient 5 |
 
 ## 🚀 快速开始
 

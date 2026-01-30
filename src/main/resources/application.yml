@@ -23,9 +23,9 @@ logging:
     org.springframework.ai.mcp: TRACE
 
 confluence:
-  url: ${CONFLUENCE_URL:https://wiki.in.eciticcfc.com}  # Confluence服务器地址
-  username: ${CONFLUENCE_USERNAME:liuhaikun} # Confluence用户名
-  password: ${CONFLUENCE_PASSWORD:A839094abc} # Confluence密码
+  url: ${CONFLUENCE_URL:xxxxxx}  # Confluence服务器地址
+  username: ${CONFLUENCE_USERNAME:xxxxxx} # Confluence用户名
+  password: ${CONFLUENCE_PASSWORD:xxxxxx} # Confluence密码
   default-space: ${CONFLUENCE_DEFAULT_SPACE:RP} # 默认搜索空间
   default-content-type: ${CONFLUENCE_DEFAULT_CONTENT_TYPE:page,blogpost} # 默认内容类型
   default-search-limit: ${CONFLUENCE_DEFAULT_SEARCH_LIMIT:10} # 默认搜索限制数
