@@ -1,135 +1,174 @@
-# Confluence MCP Server ![Java](https://img.shields.io/badge/Java-17+-orange) ![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.x-green) [![License](https://img.shields.io/badge/license-MIT-blue)]()
+# Confluence MCP Server ![Java](https://img.shields.io/badge/Java-17+-orange) ![Spring Boot](https://img.shields.io/badge/Spring_Boot-4.0-green) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)]()
 
-> 基于 Spring Boot 的 Confluence MCP (Model Context Protocol) 服务器，提供 Confluence 内容的搜索和获取功能
+> 基于Spring Boot 4.0构建的企业级Confluence MCP服务器，提供标准的Model Context Protocol接口，支持Confluence内容搜索和页面访问。
 
-## 项目概述
+## ✨ 核心特性
 
-这是一个 MCP (Model Context Protocol) 服务器，专门用于与 Atlassian Confluence 集成，提供以下功能：
-
-✅ **核心功能**
-- 搜索 Confluence 页面内容
-- 获取指定 Confluence 页面的详细内容
-- 支持按空间和内容类型进行筛选
-
-🔧 **扩展能力**
-- 易于添加新的 MCP 工具
-- 支持 SSE (Server-Sent Events) 协议
+- **标准化MCP协议**：完全遵循Model Context Protocol规范
+- **企业级架构**：模块化设计，清晰的职责分离
+- **高性能HTTP客户端**：连接池管理，超时控制
+- **完整测试覆盖**：单元测试 + 集成测试 + CI/CD流水线
+- **生产就绪**：完善的异常处理、日志监控和安全配置
 
 ## 🛠️ 技术栈
 
-| 类别     | 技术                           |
-| -------- | ------------------------------ |
-| 语言     | Java 17+                       |
-| 框架     | Spring Boot 3.x, Spring AI MCP |
-| 构建工具 | Maven                          |
-| 协议     | MCP (Model Context Protocol)   |
+| 组件           | 技术选型                |
+|---------------|---------------------|
+| 开发语言       | Java 17+            |
+| 核心框架       | Spring Boot 4.x     |
+| MCP协议支持    | Spring AI MCP       |
+| 构建工具       | Maven               |
+| 测试框架       | JUnit 5, Mockito    |
+| HTTP客户端     | Apache HttpClient 5 |
 
 ## 🚀 快速开始
 
-### 前置要求
+### 环境要求
 
-- ☑️ Java 17 或更高版本 ([下载JDK](https://adoptium.net/))
-- ☑️ Maven 3.6+ ([安装指南](https://maven.apache.org/install.html))
-- ☑️ Confluence 服务器访问权限
+- JDK 17 或更高版本
+- Maven 3.6+
+- Confluence服务器访问权限
 
-### 安装和运行
+### 安装部署
 
 ```bash
 # 1. 克隆项目
 git clone https://github.com/your-org/confluence-mcp-server.git
 cd confluence-mcp-server
 
-# 2. 配置应用 (复制开发配置模板)
-cp src/main/resources/application.yml src/main/resources/application-dev.yml
-
-# 3. 构建项目
+# 2. 构建项目
 mvn clean package
 
-# 4. 运行应用 (开发模式)
-mvn spring-boot:run -Dspring-boot.run.profiles=dev
+# 3. 配置环境变量
+export CONFLUENCE_URL=your_confluence_url
+export CONFLUENCE_USERNAME=your_username
+export CONFLUENCE_PASSWORD=your_password
 
-# 或者直接运行 jar 文件 (生产模式)
+# 4. 运行应用
 java -jar target/confluence-mcp-server-*.jar
-```
 
-> 💡 提示: 开发时使用 `application-dev.yml` 配置，生产环境建议使用环境变量
+# 开发模式
+mvn spring-boot:run
+```
 
 ## ⚙️ 配置说明
 
-### 主要配置项
+创建 `application.yml` 或使用环境变量：
 
 ```yaml
 server:
-  port: 9091  # 服务端口
+  port: 9091
 
 spring:
   application:
-    name: confluence_mcp_server  # 应用名称
+    name: confluence-mcp-server
+  ai:
+    mcp:
+      server:
+        enabled: true
+        name: confluence_mcp_server
+        version: 1.0.0
+        sse-endpoint: /mcp/sse
+        sse-message-endpoint: /api/v1/mcp
 
 confluence:
-  url: https://your-confluence-server.com  # Confluence 地址
-  username: your-username                 # 用户名
-  password: your-password                 # 密码
+  url: ${CONFLUENCE_URL:https://your-confluence.com}
+  username: ${CONFLUENCE_USERNAME}
+  password: ${CONFLUENCE_PASSWORD}
+  default-space: ${CONFLUENCE_DEFAULT_SPACE:RP}
+  default-content-type: ${CONFLUENCE_DEFAULT_CONTENT_TYPE:page,blogpost}
+  default-search-limit: ${CONFLUENCE_DEFAULT_SEARCH_LIMIT:10}
+  connection-timeout: ${CONFLUENCE_CONNECTION_TIMEOUT:30000}
+  read-timeout: ${CONFLUENCE_READ_TIMEOUT:30000}
 ```
 
-### MCP 配置
+## 📡 MCP工具接口
 
-| 端点          | 描述                            |
-| ------------- | ------------------------------- |
-| `/mcp/sse`    | SSE (Server-Sent Events) 主端点 |
-| `/api/v1/mcp` | SSE 消息端点                    |
+### searchConfluence
+在Confluence中搜索内容
 
-## 📡 API 功能
+**参数：**
+- `searchKeyword`: 搜索关键词（必需）
+- `space`: 空间标识
+- `contentType`: 内容类型（page/blogpost）
+- `limit`: 结果数量限制
 
-### 可用工具
+### getConfluencePage
+获取指定页面内容
 
-| 工具                | 描述                         | 参数                                                                                                 |
-| ------------------- | ---------------------------- | ---------------------------------------------------------------------------------------------------- |
-| `searchConfluence`  | 在 Confluence 中搜索内容     | `searchKeyword`: 搜索关键词<br>`space`: 空间标识<br>`contentType`: 内容类型<br>`limit`: 结果数量限制 |
-| `getConfluencePage` | 获取指定 Confluence 页面内容 | `pageId`: 页面 ID                                                                                    |
+**参数：**
+- `pageId`: Confluence页面ID（必需）
 
-## 开发指南
-
-### 项目结构
+## 🏗️ 项目结构
 
 ```
 src/
 ├── main/
 │   ├── java/com/confluence/mcp/
-│   │   ├── config/          # 配置类
-│   │   ├── tool/            # MCP 工具实现
+│   │   ├── config/           # 配置类
+│   │   │   ├── ConfluenceConfig.java
+│   │   │   ├── HttpClientConfig.java
+│   │   │   └── McpConfig.java
+│   │   ├── exception/        # 异常处理
+│   │   │   ├── ConfluenceException.java
+│   │   │   └── ExceptionHandlerUtil.java
+│   │   ├── tool/            # MCP工具实现
+│   │   │   └── ConfluenceTool.java
+│   │   ├── util/            # 工具类
+│   │   │   ├── HttpClientUtil.java
+│   │   │   └── JsonParserUtil.java
 │   │   └── ConfluenceMcpServerApplication.java
 │   └── resources/
-│       ├── application.yml          # 生产配置
-│       └── application-dev.yml      # 开发配置（已加入.gitignore）
-└── test/                     # 测试代码
+│       └── application.yml
+└── test/
+    └── java/com/confluence/mcp/
+        └── tool/            # 测试类
+            ├── ConfluenceToolMockTest.java
+            └── ConfluenceToolTest.java
 ```
 
-### 添加新的 MCP 工具
+## 🧪 测试
 
-1. 在 `tool/` 包下创建新的工具类
-2. 实现相应的工具方法
-3. 在配置类中注册工具
+```bash
+# 运行所有测试
+mvn test
 
-## ⚠️ 注意事项
+# 运行特定测试类
+mvn test -Dtest=ConfluenceToolTest
 
-- 🛡️ **安全建议**:
-  - 生产环境使用环境变量或密钥管理工具存储凭证
-  - 避免在代码中硬编码敏感信息
-- 🌐 **连接要求**:
-  - 确保 Confluence 服务器可访问
-  - 确保凭证有足够权限
-- 🔄 **版本兼容**:
-  - 与 Confluence 7.x+ 版本兼容
-  - 如需支持更早版本，请联系开发团队
+# 生成测试报告
+mvn jacoco:report
+```
 
-## ❓ 支持
+## 🔧 开发规范
 
-遇到问题? 请:
+- **代码风格**：遵循Google Java风格指南
+- **异常处理**：统一使用ConfluenceException业务异常
+- **日志规范**：SLF4J + 统一格式
+- **配置管理**：环境变量注入敏感信息
 
-1. 检查 [常见问题]()
-2. [提交 Issue]()
+## 📦 CI/CD流程
 
-## 📜 License
+GitHub Actions自动化流水线包含：
+1. 代码编译和依赖检查
+2. 单元测试和集成测试
+3. 代码质量扫描
+4. 安全漏洞检测
+
+## 🚨 安全注意事项
+
+- 🔐 使用环境变量管理Confluence凭证
+- 🛡️ 所有输入参数进行验证和过滤
+- ⏱️ 配置合理的网络超时时间
+- 📊 启用详细的访问日志和监控
+
+## 📄 License
 
 MIT License - 详见 [LICENSE](LICENSE) 文件
+
+## 🤝 贡献
+
+欢迎提交Issue和Pull Request！贡献前请确保：
+- 代码符合项目代码风格
+- 包含相应的单元测试
+- 更新相关文档
