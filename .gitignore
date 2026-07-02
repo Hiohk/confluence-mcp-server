@@ -1,11 +1,49 @@
-README.md
+# Local config & secrets
 src/main/resources/application-dev.yml
-target/
-.mvn/wrapper/maven-wrapper.jar
-!**/src/main/**/target/
-!**/src/test/**/target/
+src/main/resources/application-local.yml
+.env
+.env.*
+!.env.example
 
-### STS ###
+# Maven
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+
+# Gradle (if used alongside Maven)
+build/
+.gradle/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+# Compiled class files
+*.class
+
+# Log files
+*.log
+logs/
+
+# Package files
+*.jar
+*.war
+*.nar
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# JVM crash logs
+hs_err_pid*
+replay_pid*
+
+### STS / Eclipse ###
 .apt_generated
 .classpath
 .factorypath
@@ -15,10 +53,11 @@ target/
 .sts4-cache
 
 ### IntelliJ IDEA ###
-.idea
+.idea/
 *.iws
 *.iml
 *.ipr
+out/
 
 ### NetBeans ###
 /nbproject/private/
@@ -26,17 +65,26 @@ target/
 /dist/
 /nbdist/
 /.nb-gradle/
-build/
-!**/src/main/**/build/
-!**/src/test/**/build/
 
 ### VS Code ###
 .vscode/
 
+### AI / editor assistants ###
 .comate/
-
 .cursor/
-
 .continue/
 
+### OS generated files ###
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+### Python (local skill scripts) ###
+__pycache__/
+*.py[cod]
+*$py.class
