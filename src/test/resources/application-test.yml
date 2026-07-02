@@ -4,13 +4,17 @@ confluence:
   username: test-user
   password: test-password
   default-space: TEST
-  default-content-type: page
+  default-content-type: page,blogpost
   default-search-limit: 5
+  max-search-limit: 20
   connection-timeout: 5000
   read-timeout: 5000
+  max-pool-size: 10
+  max-pool-per-route: 5
 
 logging:
   level:
+    root: WARN
     com.confluence.mcp: DEBUG
     io.modelcontextprotocol: OFF
     org.springframework.ai.mcp: OFF

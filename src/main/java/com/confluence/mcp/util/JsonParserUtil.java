@@ -1,5 +1,6 @@
 package com.confluence.mcp.util;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
@@ -21,36 +22,49 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class JsonParserUtil {
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper;
 
     /**
      * 解析Confluence搜索结果的JSON响应
+     *
+     * @param jsonResponse Confluence搜索API返回的JSON字符串
+     * @return 页面列表
+     * @throws ConfluenceJsonParseException 当JSON解析失败
      */
-    public List<ConfluencePage> parseSearchResults(String jsonResponse) throws Exception {
+    public List<ConfluencePage> parseSearchResults(String jsonResponse) {
         log.debug("开始解析Confluence搜索结果JSON，响应长度: {}", jsonResponse.length());
-        JsonNode rootNode = objectMapper.readTree(jsonResponse);
-        JsonNode resultsNode = rootNode.path("results");
-        log.debug("解析到{}个结果", resultsNode.isArray() ? resultsNode.size() : 0);
+        try {
+            JsonNode rootNode = objectMapper.readTree(jsonResponse);
+            JsonNode resultsNode = rootNode.path("results");
+            int resultCount = resultsNode.isArray() ? resultsNode.size() : 0;
+            log.debug("解析到{}个结果", resultCount);
 
-        List<ConfluencePage> pages = new ArrayList<>();
-
-        if (resultsNode.isArray()) {
-            for (JsonNode resultNode : resultsNode) {
-                ConfluencePage page = new ConfluencePage();
-                page.setId(resultNode.path("id").asText());
-                page.setTitle(resultNode.path("title").asText());
-                page.setWebUrl(resultNode.path("_links").path("webui").asText());
-                page.setSpaceKey(resultNode.path("space").path("key").asText());
-                pages.add(page);
+            List<ConfluencePage> pages = new ArrayList<>();
+            if (resultsNode.isArray()) {
+                for (JsonNode resultNode : resultsNode) {
+                    ConfluencePage page = new ConfluencePage();
+                    page.setId(nullSafeText(resultNode, "id"));
+                    page.setTitle(nullSafeText(resultNode, "title"));
+                    page.setWebUrl(nullSafeText(resultNode.path("_links"), "webui"));
+                    page.setSpaceKey(nullSafeText(resultNode.path("space"), "key"));
+                    page.setExcerpt(nullSafeText(resultNode, "excerpt"));
+                    pages.add(page);
+                }
             }
-        }
 
-        log.info("解析Confluence搜索结果完成，找到{}个页面", pages.size());
-        return pages;
+            log.info("解析Confluence搜索结果完成，找到{}个页面", pages.size());
+            return pages;
+        } catch (JsonProcessingException e) {
+            log.error("解析搜索结果JSON失败: {}", e.getMessage());
+            throw new ConfluenceJsonParseException("解析搜索结果失败，JSON格式异常", e);
+        }
     }
 
     /**
      * 解析页面内容的JSON响应
+     *
+     * @param jsonResponse Confluence REST API返回的JSON字符串
+     * @return 页面内容，如果无法提取则返回空Optional
      */
     public Optional<String> parsePageContent(String jsonResponse) {
         log.debug("开始解析页面内容JSON，响应长度: {}", jsonResponse.length());
@@ -67,12 +81,21 @@ public class JsonParserUtil {
             }
             log.debug("页面内容字段不是文本类型或无内容");
             return Optional.empty();
-        } catch (Exception e) {
+        } catch (JsonProcessingException e) {
             log.warn("解析页面内容失败: {}", e.getMessage());
-            log.debug("解析失败的JSON内容: {}",
-                     jsonResponse.length() > 200 ? jsonResponse.substring(0, 200) + "..." : jsonResponse);
+            return Optional.empty();
+        } catch (Exception e) {
+            log.warn("解析页面内容时发生未知异常: {}", e.getMessage());
+            return Optional.empty();
         }
-        return Optional.empty();
+    }
+
+    /**
+     * 安全地获取JSON节点的文本值，避免NPE
+     */
+    private String nullSafeText(JsonNode node, String fieldName) {
+        JsonNode field = node.path(fieldName);
+        return field.isMissingNode() || field.isNull() ? "" : field.asText();
     }
 
     /**
@@ -86,5 +109,15 @@ public class JsonParserUtil {
         private String title;
         private String webUrl;
         private String spaceKey;
+        private String excerpt;
+    }
+
+    /**
+     * JSON解析专用异常
+     */
+    public static class ConfluenceJsonParseException extends RuntimeException {
+        public ConfluenceJsonParseException(String message, Throwable cause) {
+            super(message, cause);
+        }
     }
 }
