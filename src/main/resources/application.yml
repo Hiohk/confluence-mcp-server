@@ -1,33 +1,56 @@
 server:
-  port: 9090
+  port: ${SERVER_PORT:9090}
 
 spring:
   application:
     name: confluence_mcp_server
-
   ai:
     mcp:
       server:
         enabled: true
         name: confluence_mcp_server
         version: 1.0.0
+        transport: WEBMVC
+        type: SYNC
+        annotation-scanner:
+          enabled: true
         sse-endpoint: /mcp/sse
-        sse-message-endpoint: /api/v1/mcp
+        sse-message-endpoint: /mcp/message
+        path: /mcp
         capabilities:
           tool: true
 
+# Actuator健康检查配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: when-authorized
+  health:
+    defaults:
+      enabled: true
+
 logging:
   level:
-    # 查看MCP详细日志
-    io.modelcontextprotocol: TRACE
-    org.springframework.ai.mcp: TRACE
+    root: INFO
+    com.confluence.mcp: DEBUG
+    io.modelcontextprotocol: INFO
+    org.springframework.ai.mcp: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
 
 confluence:
-  url: ${CONFLUENCE_URL:xxxxxx}  # Confluence服务器地址
-  username: ${CONFLUENCE_USERNAME:xxxxxx} # Confluence用户名
-  password: ${CONFLUENCE_PASSWORD:xxxxxx} # Confluence密码
-  default-space: ${CONFLUENCE_DEFAULT_SPACE:ZXJXTECH} # 默认搜索空间
-  default-content-type: ${CONFLUENCE_DEFAULT_CONTENT_TYPE:page,blogpost} # 默认内容类型
-  default-search-limit: ${CONFLUENCE_DEFAULT_SEARCH_LIMIT:10} # 默认搜索限制数
-  connection-timeout: ${CONFLUENCE_CONNECTION_TIMEOUT:30000} # 连接超时时间(毫秒)
-  read-timeout: ${CONFLUENCE_READ_TIMEOUT:30000} # 读取超时时间(毫秒)
+  url: ${CONFLUENCE_URL:xxxxxx}
+  username: ${CONFLUENCE_USERNAME:xxxxxx}
+  password: ${CONFLUENCE_PASSWORD:xxxxxx}
+  default-space: ${CONFLUENCE_DEFAULT_SPACE:ZXJXTECH}
+  default-content-type: ${CONFLUENCE_DEFAULT_CONTENT_TYPE:page,blogpost}
+  default-search-limit: ${CONFLUENCE_DEFAULT_SEARCH_LIMIT:10}
+  max-search-limit: ${CONFLUENCE_MAX_SEARCH_LIMIT:100}
+  connection-timeout: ${CONFLUENCE_CONNECTION_TIMEOUT:30000}
+  read-timeout: ${CONFLUENCE_READ_TIMEOUT:30000}
+  max-pool-size: ${CONFLUENCE_MAX_POOL_SIZE:100}
+  max-pool-per-route: ${CONFLUENCE_MAX_POOL_PER_ROUTE:20}
